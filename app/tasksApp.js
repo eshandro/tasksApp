@@ -66,6 +66,7 @@ tasksApp.factory('TasksService', [function() {
 				console.log('loadTasks result.value ', result.value);
 				i++;
 				tasksObj.tasks.push(result.value);
+				console.log('tasksObj.tasks after push ', tasksObj.tasks);
 				result['continue'](); 	// Note use of ['continue'] here to 
 												// avoid conflict with JS keyword continue
 			};
@@ -88,6 +89,13 @@ tasksApp.factory('TasksService', [function() {
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore.put(task);
+	};
+
+	tasksObj.addTask = function(task) {
+		var tx = db.transaction(['tasks'], 'readwrite');
+		var objectStore = tx.objectStore('tasks');
+		var request = objectStore.add(task);
+		tx.oncomplete = tasksObj.loadTasks;		
 	}
 
 
@@ -184,28 +192,71 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', function($scope, Tasks
 	$scope.tasks = TasksService.tasks;
 	TasksService.loadTasks();
 
+	$scope.hello = 'hello';
+
 	$scope.changeCompleteStatus = function(task) {
 		console.log('this in changeCompleteStatus ', this);
+		var checkedStatus = $scope['chk_'+task.id];
+		console.log('checkedStatus ', checkedStatus);
 		var updatedTask = {
 			id: task.id,
 			desc: task.desc,
 			descUpper: task.desc.toUpperCase(),
 			due: task.due,
-			complete: e.target.checked
+			complete: checkedStatus
 		};
 		console.log('updatedTask ', updatedTask);
 		TasksService.updateTask(updatedTask);
 	};	
+	
 	$scope.remove = function(e) {
 		e.preventDefault();
 		if (confirm('Deleting task. Are you sure?', 'Delete')) {
 			TasksService.deleteTask(id);
 		}
 	};
+
+	$scope.searchTasks = function() {
+		var query = $scope.searchQuery;
+		if(query.length > 0) {
+			TasksService.loadTasks(null,query);
+		} else {
+			TasksService.loadTasks();
+		}
+	};
+
 }]);
 
-tasksApp.controller('AddCtrl', ['$scope', function($scope) {
+tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, TasksService) {
+	$scope.desc = '';
+	$scope.dueDate = '';
 
+	$scope.addTask = function() {
+		console.log('add fired');
+		if ($scope.desc.length > 0 && $scope.dueDate.length > 0) {
+			console.log('if in add passed');
+			var task = {
+				id: new Date().getTime(),
+				desc: $scope.desc,
+				descUpper: $scope.desc.toUpperCase(),
+				due: $scope.dueDate,
+				complete: 0			
+			}
+			// redirect to list
+			location.hash = '#list';
+			$scope.changeButton('list');			
+			
+			// Add task to DB which will call loadTasks
+			TasksService.addTask(task);
+			// Clear out form
+			$scope.desc = '';
+			$scope.dueDate = '';
+		}
+		else {
+			alert('Please fill out all fields', 'Add task error');
+			return;
+		}
+	};
 }]);
 
 tasksApp.controller('SettingsCtrl', ['$scope', function($scope) {

@@ -1,7 +1,7 @@
 section.add
-	form(name='add')
+	form(name='add', ng-submit='addTask()')
 		label(for='desc') Task Description
-		textarea(name='desc')
+		textarea(name='desc', ng-model='desc')
 		label(for='due_date') Due Date (MM/DD/YYYY)
-		input(type='date', name='due_date')
+		input(type='text', name='due_date', ng-model='dueDate')
 		input(type='submit', value='Add Task')
