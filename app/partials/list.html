@@ -3,5 +3,14 @@
   <form name="search">
     <input type="search" name="query" placeholder="Search tasks ..."/>
   </form>
-  <ul id="task_list"></ul>
+  <ul>
+    <li ng-repeat="task in tasks">
+      <div class="item_complete">
+        <input ng-attr-id="{{ 'chk_' + task.id }}" type="checkbox" name="item_complete" ng-attr-checked="{{task.complete == 1 ? 'checked' : ''}}" ng-change="changeCompleteStatus(task)" ng-model="{{ 'chk_' + task.id }}" ng-true-value="1" ng-false-value="0"/>
+      </div>
+      <div class="item_delete"><a href="#" ng-attr-id="{{ 'del_' + task.id }}" ng-click="remove(task.id)">Delete</a></div>
+      <div class="item_title">{{task.desc}}</div>
+      <div class="item_due">{{task.due}}</div>
+    </li>
+  </ul>
 </section>

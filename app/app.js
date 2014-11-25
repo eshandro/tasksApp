@@ -41,7 +41,8 @@
 		 * Load user settings from localStorage
 		 * 
 		 */
-		var loadSettings = function() {
+/*		var loadSettings = function() {
+			console.log('loadSettings called');
 			if (localStorageAvailable) {
 				var name = localStorage.getItem('name');
 				var colorScheme = localStorage.getItem('colorScheme');
@@ -65,8 +66,9 @@
 				}
 			}
 		};
-
-		var saveSettings = function(e) {
+*/
+/*		var saveSettings = function(e) {
+			console.log('saveSettings fired');
 			e.preventDefault();
 			if(localStorageAvailable) {
 				var name = document.forms.settings.name.value;
@@ -84,9 +86,9 @@
 			} else {
 				alert('Sorry, your browser does not support local storage', 'Settings error');
 			}
-		};
+		};*/
 
-		var resetSettings = function(e) {
+/*		var resetSettings = function(e) {
 			e.preventDefault();
 			if (confirm('This will delete all data. Are you sure?', 'Reset Data')) {
 				if(localStorageAvailable) {
@@ -98,15 +100,15 @@
 				// Reset the indexedDB or WebSQL
 				dropDatabase();
 			}
-		};
+		};*/
 
 
 		// Make sure load user settings on page load 
-		loadSettings();
+		// loadSettings();
 
 		// Add event listeners to settings for saving and resetting
-		document.forms.settings.addEventListener('submit', saveSettings, false);
-		document.forms.settings.addEventListener('reset', resetSettings, false);
+/*		document.forms.settings.addEventListener('submit', saveSettings, false);
+		document.forms.settings.addEventListener('reset', resetSettings, false);*/
 
 		// Test for IndexDB or Web SQL
 		var indexedDB = window.indexedDB || window.webkitIndexedDB 

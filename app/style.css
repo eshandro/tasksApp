@@ -109,17 +109,20 @@ header nav a {
 	text-decoration: none;
 }
 
-section {
+/*section {
 	display: none;
-}
+}*/
 
-body.list nav a.list, body.add nav a.add, body.settings nav a.settings {
+/*body.list nav a.list, body.add nav a.add, body.settings nav a.settings {
+	color: #4fbcef; background-color: #020303;
+}*/
+.active {
 	color: #4fbcef; background-color: #020303;
 }
 
-body.list section.list, body.add section.add, body.settings section.settings {
+/*body.list section.list, body.add section.add, body.settings section.settings {
 	display: block;
-}
+}*/
 
 section.list form {
 	display: block;

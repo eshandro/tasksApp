@@ -39,11 +39,11 @@ module.exports = function(grunt) {
 
 		watch: {
 			stylesheets: {
-				files: 'site/**/*.styl',
+				files: 'app/**/*.styl',
 				tasks: [ 'stylus']
 			},
 			jade: {
-				files: ['site/*.jade', 'site/**/*.jade'],
+				files: ['app/*.jade', 'app/**/*.jade'],
 				tasks: [ 'jade']
 			}
 		},

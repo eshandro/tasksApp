@@ -1,12 +1,12 @@
 doctype html
-html.blue(lang='en', manifest='tasks.appcache', ng-app='tasksApp')
+html.blue(lang='en', ng-app='tasksApp')
 	head
 		meta(charset='utf-8')
 		meta(name='viewport', content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0')
 		title My Tasks
 		link(rel='stylesheet', href='http://fonts.googleapis.com/css?family=Carter+One')
 		link(rel='stylesheet', href='style.css')
-	body.list
+	body(ng-controller='MainCtrl')
 		header
 			h1
 				span#user_name My
@@ -14,14 +14,16 @@ html.blue(lang='en', manifest='tasks.appcache', ng-app='tasksApp')
 			nav
 				ul
 					li
-						a.list(ui-sref='list') Task List
+						a.list(ui-sref='list', ng-class="{'active': activeButton == 'list'}", ng-click="changeButton('list')") Task List
 					li
-						a.add(ui-sref='add') Add Task
+						a.add(ui-sref='add', ng-class="{'active': activeButton == 'add'}", ng-click="changeButton('add')" ) Add Task
 					li
-						a.settings(ui-sref="settings") Settings
+						a.settings(ui-sref="settings", ng-class="{'active': activeButton == 'settings'}", ng-click="changeButton('settings')") Settings
 		//The different views go here using UI-Router
 		div(ui-view)
 
-		script(src='https//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.3/angular.min.js.map')
+		script(src='https://code.jquery.com/jquery-2.1.1.min.js')
+		script(src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.3/angular.min.js')
 		script(src='https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.11/angular-ui-router.js')
 		script(src='app.js')
+		script(src='tasksApp.js')
