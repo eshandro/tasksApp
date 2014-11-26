@@ -10,7 +10,16 @@ tasksApp.config(function($stateProvider, $urlRouterProvider) {
 		.state('list', {
 			url: '/list',
 			templateUrl: 'partials/list.html',
-			controller: 'ListCtrl'
+			controller: 'ListCtrl',
+			resolve: {
+				getTasks: ['TasksService', function(TasksService) {
+					return TasksService.getTasks()
+						.then(function(data) {
+							console.log('data ', data);
+							return data;
+						});
+				}]
+			}
 		})
 		.state('add', {
 			url: '/add',
@@ -24,61 +33,89 @@ tasksApp.config(function($stateProvider, $urlRouterProvider) {
 		});
 });
 
-tasksApp.factory('TasksService', [function() {
+tasksApp.factory('TasksService', ['$q', function($q) {
 	
 	var tasksObj = {};
 
 	tasksObj.tasks = [];
 
-
+	tasksObj.db = '';
 
 	// Load all tasks from IndexedDB
-		// Test for IndexDB or Web SQL
+	// Test for IndexDB or Web SQL
 	var indexedDB = window.indexedDB || window.webkitIndexedDB 
 		|| window.mozIndexedDB || window.msIndexedDB || false;
-	var db;
 
-	tasksObj.loadTasks = function(dbArg,q) {
-		// var taskList = document.getElementById('task_list');
+	// Fake async for resolve on /list
+	tasksObj.getTasks = function() {
+		console.log('getTasks fired');
+		tasksObj.loadTasks();
+		var deferred = $q.defer();
+		setTimeout(function() {
+			deferred.resolve(tasksObj.tasks);
+		},1500);
+		return deferred.promise;
+	};
+
+	tasksObj.loadTasks = function(q) {
+
 		console.log('loadTasks fired');
-		if (dbArg) { db = dbArg };
-		var query = q || '';
-		// taskList.innerHTML = '';
-		if (indexedDB) {
-			var tx = db.transaction(['tasks'], 'readonly');
-			var objectStore = tx.objectStore('tasks');
-			var cursor;
-			var i = 0;
+		if (tasksObj.db) {
 
-			if (query.length > 0) {
-				var index = objectStore.index('desc');
-				var upperQ = query.toUpperCase();
-				var keyRange = IDBKeyRange.bound(upperQ, upperQ+'z');
-				cursor = index.openCursor(keyRange);
+			var query = q || '';
+			var db = tasksObj.db;
+
+			// Clear out tasks array before pushing all from DB
+			var tasks = [];
+
+			if (indexedDB) {
+				var tx = db.transaction(['tasks'], 'readonly');
+				var objectStore = tx.objectStore('tasks');
+				var cursor;
+				var i = 0;
+
+				if (query.length > 0) {
+					var index = objectStore.index('desc');
+					var upperQ = query.toUpperCase();
+					var keyRange = IDBKeyRange.bound(upperQ, upperQ+'z');
+					cursor = index.openCursor(keyRange);
+				} else {
+					cursor = objectStore.openCursor();
+				}
+
+				cursor.onsuccess = function(e) {
+					var result = e.target.result;
+					if(result === null) return;
+					// console.log('loadTasks result ', result);
+					// console.log('loadTasks result.value ', result.value);
+					i++;
+					tasks.push(result.value);
+					// console.log('tasks after push ', tasks);
+					result['continue'](); 	// Note use of ['continue'] here to 
+													// avoid conflict with JS keyword continue
+				};
+				tx.oncomplete = function(e) {
+					// if(i === 0) { createEmptyItem(query, taskList); }
+					console.log('tasks ', tasks);
+					tasksObj.tasks = tasks;
+					console.log('tasksObj.tasks ', tasksObj.tasks);
+					return tasks;
+				};
 			} else {
-				cursor = objectStore.openCursor();
+				alert('You have no DB support with this browser, sorry.');
+				return;
 			}
 
-			cursor.onsuccess = function(e) {
-				var result = e.target.result;
-				if(result === null) return;
-				console.log('loadTasks result ', result);
-				console.log('loadTasks result.value ', result.value);
-				i++;
-				tasksObj.tasks.push(result.value);
-				console.log('tasksObj.tasks after push ', tasksObj.tasks);
-				result['continue'](); 	// Note use of ['continue'] here to 
-												// avoid conflict with JS keyword continue
-			};
-			tx.oncomplete = function(e) {
-				// if(i === 0) { createEmptyItem(query, taskList); }
-			};
 		} else {
-			alert('You have no DB support with this browser, sorry.');
+			setTimeout(function() {
+				tasksObj.loadTasks();
+			}, 1000);
 		}
 	};
 
 	tasksObj.deleteTask = function(id) {
+		var db = tasksObj.db;
+		
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore['delete'](id);
@@ -86,17 +123,21 @@ tasksApp.factory('TasksService', [function() {
 	};
 
 	tasksObj.updateTask = function(task) {
+		var db = tasksObj.db;
+
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore.put(task);
 	};
 
 	tasksObj.addTask = function(task) {
+		var db = tasksObj.db;
+
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore.add(task);
-		tx.oncomplete = tasksObj.loadTasks;		
-	}
+		tx.oncomplete = tasksObj.loadTasks;	
+	};
 
 
 	return tasksObj; 
@@ -149,10 +190,12 @@ tasksApp.controller('MainCtrl', ['$scope', 'TasksService', function($scope, Task
 	var db;
 
 	var openDB = function() {
+		console.log('openDB fired');
 		if(indexedDB) {
 			var request = indexedDB.open('tasks', 1);
 			var upgradeNeeded = ('onupgradeneeded' in request);
 			request.onsuccess = function(e) {
+				console.log('onsuccess in openDB fired');
 				db = e.target.result;
 				if (!upgradeNeeded && db.version != '1') {
 					var setVersionRequest = db.setVersion('1');
@@ -163,10 +206,12 @@ tasksApp.controller('MainCtrl', ['$scope', 'TasksService', function($scope, Task
 						objectStore.createIndex('desc', 'descUpper', {
 							unique: false
 						});
-						TasksService.loadTasks(db);
+						if (!TasksService.db) { TasksService.db = db; }
+						// TasksService.loadTasks();
 					};
 				} else {
-					TasksService.loadTasks(db);
+					if (!TasksService.db) { TasksService.db = db; }
+					// TasksService.loadTasks();
 				}
 			};
 			if(upgradeNeeded) {
@@ -188,11 +233,30 @@ tasksApp.controller('MainCtrl', ['$scope', 'TasksService', function($scope, Task
 
 }]);
 
-tasksApp.controller('ListCtrl', ['$scope','TasksService', function($scope, TasksService) {
-	$scope.tasks = TasksService.tasks;
-	TasksService.loadTasks();
+tasksApp.controller('ListCtrl', ['$scope','TasksService', 'getTasks',
+	function($scope, TasksService, getTasks) {
+	
+/*	$scope.load = function() {
+		console.log('load fired');
+		var deferred = $q.defer();
+		deferred.promise.then(function() {
+			var tasks = TasksService.loadTasks();
+			console.log('tasks in load', tasks);
+			return tasks;
+		});
+		deferred.resolve();
+	};
+	$scope.load();*/
 
-	$scope.hello = 'hello';
+	$scope.tasks = getTasks;
+	// TasksService.loadTasks();
+	$scope.run = function() {
+		console.log('run fired');
+		console.log(TasksService.loadTasks());
+		$scope.test = TasksService.loadTasks();
+	};
+	$scope.test = '';
+
 
 	$scope.changeCompleteStatus = function(task) {
 		console.log('this in changeCompleteStatus ', this);
@@ -209,8 +273,7 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', function($scope, Tasks
 		TasksService.updateTask(updatedTask);
 	};	
 	
-	$scope.remove = function(e) {
-		e.preventDefault();
+	$scope.remove = function(id) {
 		if (confirm('Deleting task. Are you sure?', 'Delete')) {
 			TasksService.deleteTask(id);
 		}
@@ -219,11 +282,12 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', function($scope, Tasks
 	$scope.searchTasks = function() {
 		var query = $scope.searchQuery;
 		if(query.length > 0) {
-			TasksService.loadTasks(null,query);
+			TasksService.loadTasks(query);
 		} else {
-			TasksService.loadTasks();
+			return;
 		}
 	};
+
 
 }]);
 
@@ -231,7 +295,7 @@ tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, Tasks
 	$scope.desc = '';
 	$scope.dueDate = '';
 
-	$scope.addTask = function() {
+	$scope.addTaskForm = function() {
 		console.log('add fired');
 		if ($scope.desc.length > 0 && $scope.dueDate.length > 0) {
 			console.log('if in add passed');
@@ -241,16 +305,18 @@ tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, Tasks
 				descUpper: $scope.desc.toUpperCase(),
 				due: $scope.dueDate,
 				complete: 0			
-			}
-			// redirect to list
-			location.hash = '#list';
-			$scope.changeButton('list');			
-			
-			// Add task to DB which will call loadTasks
-			TasksService.addTask(task);
+			};
 			// Clear out form
 			$scope.desc = '';
 			$scope.dueDate = '';
+			
+			// Add task to DB which will call loadTasks
+			TasksService.addTask(task);
+			
+			// redirect to list
+/*			location.hash = '#list';
+			$scope.changeButton('list');*/	
+			
 		}
 		else {
 			alert('Please fill out all fields', 'Add task error');
@@ -262,6 +328,16 @@ tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, Tasks
 tasksApp.controller('SettingsCtrl', ['$scope', function($scope) {
 	$scope.name = localStorage.getItem('name');
 	$scope.colorScheme = localStorage.getItem('colorScheme') || 'Blue';
+
+	// Drop entire indexedDB - called in resetSettings below
+	var dropDatabase = function() {
+		var indexedDB = window.indexedDB || window.webkitIndexedDB 
+			|| window.mozIndexedDB || window.msIndexedDB || false;
+		if(indexedDB) {
+			var delDBRequest = indexedDB.deleteDatabase('tasks');
+			delDBRequest.onsuccess = window.location.reload();
+		}
+	};
 
 	$scope.saveSettings = function(e) {
 		console.log('saveSettings fired');
@@ -286,18 +362,17 @@ tasksApp.controller('SettingsCtrl', ['$scope', function($scope) {
 	};
 	$scope.resetSettings = function($event) {
 			// e.preventDefault();
-			console.log('this in resetSettings ', this);
-			console.log('$event in resetSettings ', $event);
 			if (confirm('This will delete all data. Are you sure?', 'Reset Data')) {
 				if($scope.localStorageAvailable) {
 					localStorage.clear();
 				}
-				// Reset to defaults and redirect to #list
+				// Reset to defaults an
 				$scope.loadSettings();
-				location.hash = '#list';
-				$scope.changeButton('list');
+				
+				// location.hash = '#list';
+				// $scope.changeButton('list');
 				// Reset the indexedDB or WebSQL
-				// dropDatabase();
+				dropDatabase();
 			}
 		};
 

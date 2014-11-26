@@ -1,11 +1,13 @@
 section.list
 	form(name='search', ng-submit='searchTasks()')
 		input(type='search', name='query', placeholder='Search tasks ...', ng-model='searchQuery')
-	p {{hello}}
 	ul
+		p(ng-click='run()') Click
+		p {{TasksService.tasks}}
+		p {{test}}
 		li(ng-repeat='task in tasks')
 			.item_complete
-				input(ng-attr-id="{{ 'chk_' + task.id }}", type='checkbox', name='item_complete', ng-attr-checked="{{task.complete == 1 ? 'checked' : ''}}", ng-change='changeCompleteStatus(task)', ng-model="{{ 'chk_' + task.id }}", ng-true-value=1, ng-false-value=0)
+				input(ng-attr-id="{{ 'chk_' + task.id }}", type='checkbox', name='item_complete', ng-attr-checked="{{task.complete == 1 ? 'checked' : ''}}", ng-click='changeCompleteStatus(task)', ng-true-value=1, ng-false-value=0)
 			.item_delete
 				a(href='#', ng-attr-id="{{ 'del_' + task.id }}", ng-click='remove(task.id)') Delete
 			.item_title {{task.desc}}
