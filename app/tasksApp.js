@@ -124,7 +124,9 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore['delete'](id);
-		// tx.oncomplete = tasksObj.loadTasks;	
+		tx.oncomplete = function() { 
+			window.location.reload();
+		};
 	};
 
 	tasksObj.updateTask = function(task) {
@@ -260,6 +262,7 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', 'getTasks',
 	$scope.remove = function(id) {
 		if (confirm('Deleting task. Are you sure?', 'Delete')) {
 			TasksService.deleteTask(id);
+			// $scope.tasks = TasksService.loadTasks();
 		}
 	};
 
