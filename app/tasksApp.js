@@ -41,7 +41,6 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 
 	tasksObj.db = '';
 
-	// Load all tasks from IndexedDB
 	// Test for IndexDB or Web SQL
 	var indexedDB = window.indexedDB || window.webkitIndexedDB 
 		|| window.mozIndexedDB || window.msIndexedDB || false;
@@ -53,10 +52,11 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 		var deferred = $q.defer();
 		setTimeout(function() {
 			deferred.resolve(tasksObj.tasks);
-		},1500);
+		},1200);
 		return deferred.promise;
 	};
 
+	// Load all tasks from IndexedDB
 	tasksObj.loadTasks = function(q) {
 
 		console.log('loadTasks fired');
@@ -71,17 +71,21 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 			if (indexedDB) {
 				var tx = db.transaction(['tasks'], 'readonly');
 				var objectStore = tx.objectStore('tasks');
-				var cursor;
+				var cursor = objectStore.openCursor();;
 				var i = 0;
 
-				if (query.length > 0) {
+// Using angular filters to search
+/*				if (query.length > 0) {
+					console.log('query in loadTasks length > 0')
+					var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange ||
+				 		window.mozIDBKeyRange || window.msIDBKeyRange || false;
 					var index = objectStore.index('desc');
 					var upperQ = query.toUpperCase();
 					var keyRange = IDBKeyRange.bound(upperQ, upperQ+'z');
 					cursor = index.openCursor(keyRange);
 				} else {
 					cursor = objectStore.openCursor();
-				}
+				}*/
 
 				cursor.onsuccess = function(e) {
 					var result = e.target.result;
@@ -96,7 +100,7 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 				};
 				tx.oncomplete = function(e) {
 					// if(i === 0) { createEmptyItem(query, taskList); }
-					console.log('tasks ', tasks);
+					// console.log('tasks ', tasks);
 					tasksObj.tasks = tasks;
 					console.log('tasksObj.tasks ', tasksObj.tasks);
 					return tasks;
@@ -108,8 +112,9 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 
 		} else {
 			setTimeout(function() {
+				console.log('loadTasks timeout fired')
 				tasksObj.loadTasks();
-			}, 1000);
+			}, 500);
 		}
 	};
 
@@ -119,7 +124,7 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore['delete'](id);
-		tx.oncomplete = tasksObj.loadTasks;	
+		// tx.oncomplete = tasksObj.loadTasks;	
 	};
 
 	tasksObj.updateTask = function(task) {
@@ -136,7 +141,7 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 		var tx = db.transaction(['tasks'], 'readwrite');
 		var objectStore = tx.objectStore('tasks');
 		var request = objectStore.add(task);
-		tx.oncomplete = tasksObj.loadTasks;	
+		// tx.oncomplete = tasksObj.loadTasks;
 	};
 
 
@@ -236,31 +241,10 @@ tasksApp.controller('MainCtrl', ['$scope', 'TasksService', function($scope, Task
 tasksApp.controller('ListCtrl', ['$scope','TasksService', 'getTasks',
 	function($scope, TasksService, getTasks) {
 	
-/*	$scope.load = function() {
-		console.log('load fired');
-		var deferred = $q.defer();
-		deferred.promise.then(function() {
-			var tasks = TasksService.loadTasks();
-			console.log('tasks in load', tasks);
-			return tasks;
-		});
-		deferred.resolve();
-	};
-	$scope.load();*/
-
 	$scope.tasks = getTasks;
-	// TasksService.loadTasks();
-	$scope.run = function() {
-		console.log('run fired');
-		console.log(TasksService.loadTasks());
-		$scope.test = TasksService.loadTasks();
-	};
-	$scope.test = '';
 
-
-	$scope.changeCompleteStatus = function(task) {
-		console.log('this in changeCompleteStatus ', this);
-		var checkedStatus = $scope['chk_'+task.id];
+	$scope.changeCompleteStatus = function(task,$event) {
+		var checkedStatus = $event.target.checked;
 		console.log('checkedStatus ', checkedStatus);
 		var updatedTask = {
 			id: task.id,
@@ -279,14 +263,15 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', 'getTasks',
 		}
 	};
 
-	$scope.searchTasks = function() {
+// Using angular filters to do search
+/*	$scope.searchTasks = function() {
 		var query = $scope.searchQuery;
 		if(query.length > 0) {
 			TasksService.loadTasks(query);
 		} else {
 			return;
 		}
-	};
+	};*/
 
 
 }]);
@@ -298,13 +283,12 @@ tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, Tasks
 	$scope.addTaskForm = function() {
 		console.log('add fired');
 		if ($scope.desc.length > 0 && $scope.dueDate.length > 0) {
-			console.log('if in add passed');
 			var task = {
 				id: new Date().getTime(),
 				desc: $scope.desc,
 				descUpper: $scope.desc.toUpperCase(),
 				due: $scope.dueDate,
-				complete: 0			
+				complete: false		
 			};
 			// Clear out form
 			$scope.desc = '';
