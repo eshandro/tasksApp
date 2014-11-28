@@ -10,7 +10,7 @@
       </div>
       <div class="item_delete"><a href="#/list" ng-attr-id="{{ 'del_' + task.id }}" ng-click="remove(task.id)">Delete</a></div>
       <div class="item_title">{{task.desc}}</div>
-      <div class="item_due">{{task.due}}</div>
+      <div class="item_due">{{task.due | date:'MM-dd-yyyy'}}</div>
     </li>
   </ul>
 </section>

@@ -8,4 +8,4 @@ section.list
 			.item_delete
 				a(href='#/list', ng-attr-id="{{ 'del_' + task.id }}", ng-click='remove(task.id)') Delete
 			.item_title {{task.desc}}
-			.item_due {{task.due}}
+			.item_due {{task.due | date:'MM-dd-yyyy'}}

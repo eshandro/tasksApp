@@ -3,8 +3,8 @@
   <form name="add" ng-submit="addTaskForm()">
     <label for="desc">Task Description</label>
     <textarea name="desc" ng-model="desc"></textarea>
-    <label for="due_date">Due Date (MM/DD/YYYY)</label>
-    <input type="text" name="due_date" ng-model="dueDate"/>
+    <label for="due_date">Due Date</label>
+    <input type="date" name="due_date" ng-model="dueDate" placeholder="YYYY-MM-DD"/>
     <input type="submit" value="Add Task"/>
   </form>
 </section>

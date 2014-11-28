@@ -89,7 +89,7 @@ tasksApp.factory('TasksService', ['$q', function($q) {
 
 				cursor.onsuccess = function(e) {
 					var result = e.target.result;
-					if(result === null) return;
+					if(!result) return;
 					// console.log('loadTasks result ', result);
 					// console.log('loadTasks result.value ', result.value);
 					i++;
@@ -281,11 +281,11 @@ tasksApp.controller('ListCtrl', ['$scope','TasksService', 'getTasks',
 
 tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, TasksService) {
 	$scope.desc = '';
-	$scope.dueDate = '';
+	$scope.dueDate = new Date();
 
 	$scope.addTaskForm = function() {
 		console.log('add fired');
-		if ($scope.desc.length > 0 && $scope.dueDate.length > 0) {
+		if ($scope.desc.length > 0 && $scope.dueDate) {
 			var task = {
 				id: new Date().getTime(),
 				desc: $scope.desc,
@@ -295,7 +295,7 @@ tasksApp.controller('AddCtrl', ['$scope', 'TasksService', function($scope, Tasks
 			};
 			// Clear out form
 			$scope.desc = '';
-			$scope.dueDate = '';
+			$scope.dueDate = new Date();
 			
 			// Add task to DB which will call loadTasks
 			TasksService.addTask(task);
